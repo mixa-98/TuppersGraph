@@ -1,7 +1,7 @@
 NAME			= TuppersGraph
 CC				= gcc
 RM				= rm -f
-_SRCS			= main.c
+_SRCS			= main.c printreversemass.c
 SRCS			= $(addprefix srcs/, $(_SRCS))
 OBJS			= $(SRCS:.c=.o)
 CFLAGS			= -Wall -Wextra -Werror

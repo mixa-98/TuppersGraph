@@ -1,24 +1,5 @@
-#include <SDL2/SDL.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-#define NUMBEROFROWS 17
-#define NUMBEROFCOLS 106
-#define PIXELPERCELL 8
-typedef struct eventspoints{
-    uint8_t points[NUMBEROFROWS][NUMBEROFCOLS];
-    SDL_Event event;
-    SDL_Renderer *renderer;
-    SDL_Window *windows;
-    SDL_TimerID eventtimer;
-    uint32_t leftbutd;
-    uint32_t quit;
-    uint32_t x;
-    uint32_t y;
-    uint8_t xlast;
-    uint8_t ylast;
-    uint8_t nu;
-} t_eventspoints;
+#include "../mTupperGraph.h"
+
 
 void renderlines(SDL_Renderer *renderer)
 {
@@ -36,45 +17,49 @@ void renderlines(SDL_Renderer *renderer)
 }
 
 
-void init_uint16_t_mass(uint16_t **mass, uint16_t len)
+void init_uint16_t_mass(uint16_t *mass, uint16_t len)
 {
     for(uint16_t i = 0; i < len; i++)
     {
-        *mass[i] = 0;
+        mass[i] = 0;
     }
 }
 
 
 uint16_t *multiplicationmass(uint16_t *mass, uint16_t len, uint16_t multiplicator)
 {
+    uint16_t *rslt = (uint16_t*)malloc(len * sizeof(uint16_t));
     for(uint16_t i = 0; i < len; i++)
     {
-        mass[i] *= multiplicator;
+        rslt[i] = mass[i] * multiplicator;
     }
     for(uint16_t i = 0; i < len; i++)
     {
-        if(mass[i] > 10)
+        if(rslt[i] >= 10)
         {
-            mass[i + 1] += mass[i] / 10;
-            mass[i] %= 10;
+            rslt[i + 1] += rslt[i] / 10;
+            rslt[i] %= 10;
         }
     }
-    return mass;
+    return rslt;
 }
 
 
-void addmasses(uint16_t **mass, uint16_t *mass2, uint16_t len)
+
+
+
+void addmasses(uint16_t *mass, uint16_t *mass2, uint16_t len)
 {
     for(uint16_t i = 0; i < len; i++)
     {
-        *mass[i] += mass2[i];
+        mass[i] += mass2[i];
     }
     for(uint16_t i = 0; i < len; i++)
     {
-        if(*mass[i] > 10)
+        if(mass[i] >= 10)
         {
-            *mass[i + 1] += *mass[i] / 10;
-            *mass[i] %= 10;
+            mass[i + 1] += mass[i] / 10;
+            mass[i] %= 10;
         }
     }
 }
@@ -89,6 +74,7 @@ uint16_t *calcpoints(uint8_t points[17][106], t_eventspoints *evp)
         evp->quit = 1;
         return NULL;
     }
+    init_uint16_t_mass(rslt, 544);
     uint16_t tempmasscounter = 0;
     uint16_t *rsltspecialcounter = (uint16_t*)malloc(543 * sizeof(uint16_t));
     if(!rsltspecialcounter)
@@ -96,29 +82,36 @@ uint16_t *calcpoints(uint8_t points[17][106], t_eventspoints *evp)
         evp->quit = 1;
         return NULL;
     }
+    init_uint16_t_mass(rsltspecialcounter, 543);
     rsltspecialcounter[0] = 2;
-    uint16_t *tempmass = (uint16_t*)malloc(544 * sizeof(uint16_t));
+    uint16_t *tempmass = (uint16_t*)malloc(1802 * sizeof(uint16_t));
     if(!tempmass)
     {
         evp->quit = 1;
         return NULL;
     }
+    init_uint16_t_mass(tempmass, 1802);
     for(uint8_t x = 0; x < NUMBEROFCOLS; x++)
     {
-        for(uint8_t y = NUMBEROFROWS - 1; y + 1 != 0; y--)
+        for(int8_t y = NUMBEROFROWS - 1; y >= 0; y--)
         {
-            tempmass[tempmasscounter] = points[x][y];
+            tempmass[tempmasscounter] = points[y][x];
             tempmasscounter++;
         }
     }
-    for (uint16_t i = 0; i < 544; i++)
+    rslt[0] = tempmass[0]? 1 : 0;
+    for (uint16_t i = 1; i < 1802; i++)
     {
-        addmasses(&rslt, multiplicationmass(rsltspecialcounter, 544, tempmass[i]), 544);
-        rsltspecialcounter = multiplicationmass(rsltspecialcounter, 544, 2);
+        uint16_t *forfree = multiplicationmass(rsltspecialcounter, 543, tempmass[i]);
+        addmasses(rslt, forfree, 543);
+        free(forfree);
+        rsltspecialcounter = multiplicationmass(rsltspecialcounter, 543, 2);
     }
     free(rsltspecialcounter);
     free(tempmass);
-    return rslt;
+    uint16_t *rslt2 = multiplicationmass(rslt, 544, 17);
+    free(rslt);
+    return rslt2;
 }
 
 
@@ -152,17 +145,6 @@ void initpoints(uint8_t points[NUMBEROFROWS][NUMBEROFCOLS])
             points[y][x] = 0;
         }
     }
-}
-
-
-void printmass(uint16_t *mass, uint32_t masslen)
-{
-    for(uint32_t i = 0; i < masslen; i++)
-    {
-        char c = mass[i] + '0';
-        write(1, &c, 1);
-    }
-    write(1, "\n", 1);
 }
 
 
@@ -205,22 +187,26 @@ int main(void)
             }
             if((evp.event.type == SDL_MOUSEBUTTONDOWN && evp.event.button.button == SDL_BUTTON_LEFT) || evp.leftbutd)
             {
-                evp.leftbutd = 1;
                 evp.y = evp.event.button.y;
                 evp.x = evp.event.button.x;
                 evp.x = evp.x/PIXELPERCELL;
                 evp.y = evp.y/PIXELPERCELL;
-                if(NUMBEROFCOLS > evp.x && NUMBEROFROWS > evp.y && (evp.xlast != evp.x || evp.ylast != evp.y))
+                if(NUMBEROFCOLS > evp.x && NUMBEROFROWS > evp.y && ((evp.xlast != evp.x || evp.ylast != evp.y) || evp.leftbutd == 0))
                 {
-                    evp.points[evp.y][evp.x] = !evp.points[evp.y][evp.x];
+                    evp.points[evp.y][evp.x] = evp.points[evp.y][evp.x]? 0 : 1;
                     evp.nu = 1;
+                    evp.xlast = evp.x;
+                    evp.ylast = evp.y;
                 }
-                evp.xlast = evp.x;
-                evp.ylast = evp.y;
+                evp.leftbutd = 1;
             }
             if(evp.event.type == SDL_QUIT)
             {
                 evp.quit = 1;
+            }
+            if(evp.event.key.keysym.scancode == SDL_SCANCODE_LCTRL)
+            {
+                initpoints(evp.points);
             }
         }
         SDL_SetRenderDrawColor(evp.renderer, 0, 0, 0, 0xFF);
@@ -230,7 +216,7 @@ int main(void)
         if(evp.nu)
         {
             uint16_t *pointcalc = calcpoints(evp.points, &evp);
-            printmass(pointcalc, 544);
+            printreversemass(pointcalc, 544);
             free(pointcalc);
         }
         SDL_RenderPresent(evp.renderer);
