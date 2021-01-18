@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
 #define NUMBEROFROWS 17
 #define NUMBEROFCOLS 106
 #define PIXELPERCELL 8
@@ -35,170 +36,88 @@ void renderlines(SDL_Renderer *renderer)
 }
 
 
+void init_uint16_t_mass(uint16_t **mass, uint16_t len)
+{
+    for(uint16_t i = 0; i < len; i++)
+    {
+        *mass[i] = 0;
+    }
+}
+
+
+uint16_t *multiplicationmass(uint16_t *mass, uint16_t len, uint16_t multiplicator)
+{
+    for(uint16_t i = 0; i < len; i++)
+    {
+        mass[i] *= multiplicator;
+    }
+    for(uint16_t i = 0; i < len; i++)
+    {
+        if(mass[i] > 10)
+        {
+            mass[i + 1] += mass[i] / 10;
+            mass[i] %= 10;
+        }
+    }
+    return mass;
+}
+
+
+void addmasses(uint16_t **mass, uint16_t *mass2, uint16_t len)
+{
+    for(uint16_t i = 0; i < len; i++)
+    {
+        *mass[i] += mass2[i];
+    }
+    for(uint16_t i = 0; i < len; i++)
+    {
+        if(*mass[i] > 10)
+        {
+            *mass[i + 1] += *mass[i] / 10;
+            *mass[i] %= 10;
+        }
+    }
+}
+
+
 uint16_t *calcpoints(uint8_t points[17][106], t_eventspoints *evp)
 {
     evp->nu = 0;
-    uint16_t calcpoint[] = {0, 0, 0, 0};
-    uint16_t countpoints;
-    uint16_t *rslt = (uint16_t*)malloc(451 * sizeof(uint16_t));
+    uint16_t *rslt = (uint16_t*)malloc(544 * sizeof(uint16_t));
     if(!rslt)
     {
         evp->quit = 1;
         return NULL;
     }
-    uint16_t rsltcounter;
+    uint16_t tempmasscounter = 0;
+    uint16_t *rsltspecialcounter = (uint16_t*)malloc(543 * sizeof(uint16_t));
+    if(!rsltspecialcounter)
+    {
+        evp->quit = 1;
+        return NULL;
+    }
+    rsltspecialcounter[0] = 2;
+    uint16_t *tempmass = (uint16_t*)malloc(544 * sizeof(uint16_t));
+    if(!tempmass)
+    {
+        evp->quit = 1;
+        return NULL;
+    }
     for(uint8_t x = 0; x < NUMBEROFCOLS; x++)
     {
         for(uint8_t y = NUMBEROFROWS - 1; y + 1 != 0; y--)
         {
-            if(countpoints == 4)
-            {
-                countpoints = 0;
-                if(calcpoint[0] == 0)
-                {
-                    if(calcpoint[1] == 0)
-                    {
-                        if(calcpoint[2] == 0)
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] += 0; //0000
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] += 1; //0001
-                            }
-                        }
-                        else
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] += 2; //0010
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] += 3; //0011
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if(calcpoint[2] == 0)
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] += 4; //0100
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] += 5; //0101
-                            }
-                        }
-                        else
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] += 6; //0110
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] += 7; //0111
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if(calcpoint[1] == 0)
-                    {
-                        if(calcpoint[2] == 0)
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] += 8; //1000
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] += 9; //1001
-                                if(rslt[rsltcounter] == 10)
-                                {
-                                    rslt[rsltcounter + 1] = 1;
-                                    rslt[rsltcounter] = 0;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] += 0; //1010
-                                rslt[rsltcounter + 1] += 1;
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] += 1; //1011
-                                rslt[rsltcounter + 1] += 1;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if(calcpoint[2] == 0)
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] += 3; //1100
-                                rslt[rsltcounter + 1] += 1;
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] += 4; //1101
-                                rslt[rsltcounter + 1] += 1;
-                            }
-                        }
-                        else
-                        {
-                            if(calcpoint[3] == 0)
-                            {
-                                rslt[rsltcounter] = 5; //1110
-                                rslt[rsltcounter + 1] += 1;
-                            }
-                            else
-                            {
-                                rslt[rsltcounter] = 6; //1111
-                                rslt[rsltcounter + 1] += 1;
-                            }
-                        }
-                    }
-                }
-                rsltcounter++;
-            }
-            calcpoint[countpoints] = points[y][x];
-            countpoints++;
+            tempmass[tempmasscounter] = points[x][y];
+            tempmasscounter++;
         }
     }
-    if(calcpoint[0] == 0)
+    for (uint16_t i = 0; i < 544; i++)
     {
-        if(calcpoint[1] == 0)
-        {
-            rslt[450] += 0; //00
-        }
-        else
-        {
-            rslt[450] += 1; //01
-        }
+        addmasses(&rslt, multiplicationmass(rsltspecialcounter, 544, tempmass[i]), 544);
+        rsltspecialcounter = multiplicationmass(rsltspecialcounter, 544, 2);
     }
-    else
-    {
-        if(calcpoint[1] == 0)
-        {
-            rslt[450] += 2; //10
-        }
-        else
-        {
-            rslt[450] += 3; //11
-        }
-    }
+    free(rsltspecialcounter);
+    free(tempmass);
     return rslt;
 }
 
@@ -240,9 +159,10 @@ void printmass(uint16_t *mass, uint32_t masslen)
 {
     for(uint32_t i = 0; i < masslen; i++)
     {
-        printf("%d", mass[i]);
+        char c = mass[i] + '0';
+        write(1, &c, 1);
     }
-    printf("\n");
+    write(1, "\n", 1);
 }
 
 
@@ -310,7 +230,7 @@ int main(void)
         if(evp.nu)
         {
             uint16_t *pointcalc = calcpoints(evp.points, &evp);
-            printmass(pointcalc, 451);
+            printmass(pointcalc, 544);
             free(pointcalc);
         }
         SDL_RenderPresent(evp.renderer);
