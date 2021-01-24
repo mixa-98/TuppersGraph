@@ -26,14 +26,36 @@ void init_uint16_t_mass(uint16_t *mass, uint16_t len)
 }
 
 
-uint16_t *multiplicationmass(uint16_t *mass, uint16_t len, uint16_t multiplicator)
+void init_uint8_t_mass(uint8_t *mass, uint16_t len)
 {
-    uint16_t *rslt = (uint16_t*)malloc(len * sizeof(uint16_t));
+    for(uint16_t i = 0; i < len; i++)
+    {
+        mass[i] = 0;
+    }
+}
+
+
+void f_massreverse(uint16_t *str, uint8_t len)
+{
+	uint16_t i = 0;
+    while (i != len / 2)
+	{
+		uint16_t tmp = *(str + i);
+		*(str + i) = *(str + (len - i - 1));
+		*(str + (len - i - 1)) = tmp;
+		i++;
+	}
+}
+
+
+uint16_t *multiplicationmass(uint16_t *mass, uint16_t len, uint16_t lenofrslt, uint16_t multiplicator)
+{
+    uint16_t *rslt = (uint16_t*)malloc(lenofrslt * sizeof(uint16_t));
     for(uint16_t i = 0; i < len; i++)
     {
         rslt[i] = mass[i] * multiplicator;
     }
-    for(uint16_t i = 0; i < len; i++)
+    for(uint16_t i = 0; i < lenofrslt; i++)
     {
         if(rslt[i] >= 10)
         {
@@ -45,7 +67,33 @@ uint16_t *multiplicationmass(uint16_t *mass, uint16_t len, uint16_t multiplicato
 }
 
 
-
+uint16_t *dividemass(uint16_t *mass, uint16_t len, uint16_t lenofrslt, uint16_t divider)
+{
+    uint16_t *rslt = (uint16_t*)malloc(lenofrslt * sizeof(uint16_t));
+    uint16_t curpl = len - 1;
+    uint16_t temp = 0;
+    uint16_t specialcounter = 0;
+    while (curpl > 0)
+    {
+        for(uint16_t i = curpl; temp <= divider; i--)
+        {
+            temp = mass[i] + temp * 10;
+            rslt[curpl] = 0;
+            if(curpl > 0)
+            {
+                curpl--;
+            }
+            specialcounter++;
+        }
+        specialcounter = 0;
+        if(temp)
+        {
+            rslt[curpl + 1] = temp / divider;
+            temp = temp - (temp / divider * divider);
+        }
+    }
+    return rslt;
+}
 
 
 void addmasses(uint16_t *mass, uint16_t *mass2, uint16_t len)
@@ -102,14 +150,14 @@ uint16_t *calcpoints(uint8_t points[17][106], t_eventspoints *evp)
     rslt[0] = tempmass[0]? 1 : 0;
     for (uint16_t i = 1; i < 1802; i++)
     {
-        uint16_t *forfree = multiplicationmass(rsltspecialcounter, 543, tempmass[i]);
+        uint16_t *forfree = multiplicationmass(rsltspecialcounter, 543, 543, tempmass[i]);
         addmasses(rslt, forfree, 543);
         free(forfree);
-        rsltspecialcounter = multiplicationmass(rsltspecialcounter, 543, 2);
+        rsltspecialcounter = multiplicationmass(rsltspecialcounter, 543, 543, 2);
     }
     free(rsltspecialcounter);
     free(tempmass);
-    uint16_t *rslt2 = multiplicationmass(rslt, 544, 17);
+    uint16_t *rslt2 = multiplicationmass(rslt, 544, 544, 17);
     free(rslt);
     return rslt2;
 }
@@ -136,6 +184,64 @@ void rendersquares(SDL_Renderer *renderer, uint8_t points[17][106])
 }
 
 
+uint16_t f_strlen(char *str)
+{
+	int len = 0;
+	while (*str != '\0')
+	{
+		len++;
+		str++;
+	}
+	return (len);
+}
+
+
+uint16_t *getmasszeros(uint16_t lenf)
+{
+    uint16_t *rslt = (uint16_t*)malloc(lenf * sizeof(uint16_t));
+    init_uint16_t_mass(rslt, lenf);
+    return rslt;
+}
+
+
+uint16_t *strtomassint(char *str, uint16_t lenf)
+{
+    uint8_t len = f_strlen(str);
+    uint16_t *rslt = getmasszeros(lenf);
+    for(uint16_t i = 0; str[i]; i++)
+    {
+        rslt[i] = str[i] - '0';
+    }
+    return rslt;
+}
+
+
+uint8_t ismassnull(uint16_t *mass, uint16_t len)
+{
+    for(uint16_t i = 0; i < len; i++)
+    {
+        if(mass[i] > 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+void rewritepoints(uint8_t points[NUMBEROFROWS][NUMBEROFCOLS], uint8_t *mass)
+{
+    uint16_t i = 0;
+    for(uint8_t x = 0; x < NUMBEROFCOLS; x++)
+    {
+        for(int8_t y = NUMBEROFROWS - 1; y >= 0; y--, i++)
+        {
+            points[y][x] = mass[i];
+        }
+    }
+}
+
+
 void initpoints(uint8_t points[NUMBEROFROWS][NUMBEROFCOLS])
 {
     for(int y = 0; y < NUMBEROFROWS; y++)
@@ -148,8 +254,37 @@ void initpoints(uint8_t points[NUMBEROFROWS][NUMBEROFCOLS])
 }
 
 
-int main(void)
+uint8_t modmassby2(uint16_t *mass)
 {
+    return mass[0] % 2;
+}
+
+
+void calcpositions(uint8_t points[NUMBEROFROWS][NUMBEROFCOLS], uint16_t *mass)
+{
+    if(ismassnull(mass, 1802)){initpoints(points);return;}
+    uint16_t *newmass;
+    uint16_t *oldmass = mass;
+    newmass = dividemass(oldmass, 1802, 1802, 17);
+    free(oldmass);
+    oldmass = newmass;
+    uint8_t *rslt = (uint8_t*)malloc(1802 * sizeof(uint8_t));
+    init_uint8_t_mass(rslt, 1802);
+    for(uint16_t i = 0; oldmass != 1; i++)
+    {
+        rslt[i] = modmassby2(oldmass);
+        newmass = dividemass(oldmass, 1802, 1802, 2);
+        free(oldmass);
+        oldmass = newmass;
+    }
+    free(oldmass);
+    rewritepoints(points, mass);
+}
+
+
+int main(int argc, char *argv[])
+{
+
     t_eventspoints evp;
     if(SDL_Init(SDL_INIT_VIDEO))
     {
