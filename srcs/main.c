@@ -301,8 +301,6 @@ void calcpositions(uint16_t points[NUMBEROFROWS][NUMBEROFCOLS], uint16_t *mass)
             free(rslt);
             return;
         }
-        printreversemass(newmass, 1802);
-        printf("%u", (uint)i);
         free(oldmass);
         oldmass = newmass;
     }
