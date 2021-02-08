@@ -3,6 +3,7 @@
 
 void printreversemass(uint16_t *mass, uint32_t masslen)
 {
+    printf("\n\n\n");
     for(uint32_t i = masslen - 1; i > 0; i--)
     {
         printf("%u", (unsigned int)mass[i]);
